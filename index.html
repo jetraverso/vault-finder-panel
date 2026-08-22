@@ -367,11 +367,25 @@ async function entrar() {
 
 async function cargar() {
   try {
-    [licencias, equipos, versiones] = await Promise.all([
-      api("/rest/v1/licencias_resumen?select=*&order=client"),
+    // Se leen las tablas de frente, no una vista: las vistas de Postgres pueden
+    // ejecutarse con los permisos de quien las creó y saltearse las reglas de
+    // seguridad. El resumen por licencia se arma acá, que es trivial.
+    const [crudas, actos, vers] = await Promise.all([
+      api("/rest/v1/licenses?select=*&order=client"),
       api("/rest/v1/activations?select=*&order=last_seen.desc"),
       api("/rest/v1/versions?select=*&order=build.desc")
     ]);
+    equipos = actos; versiones = vers;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    licencias = crudas.map(l => {
+      const suyos = actos.filter(a => a.license_key === l.key);
+      const vence = l.expires_at ? new Date(l.expires_at + "T00:00:00") : null;
+      return { ...l,
+        equipos_usados: suyos.length,
+        ultima_actividad: suyos.reduce((m, a) => (!m || a.last_seen > m) ? a.last_seen : m, null),
+        vencida: !!vence && vence < hoy,
+        dias_restantes: vence ? Math.round((vence - hoy) / 864e5) : null };
+    });
   } catch (e) {
     if (/permission|denied|policy/i.test(e.message)) {
       avisar("Tu usuario no está en la lista de administradores.", true);

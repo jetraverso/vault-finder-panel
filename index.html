@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vault Finder · Licencias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#0B0813; --surface:#14121F; --surface2:#1B1828;
+    --line:#2A2740; --line-soft:#211E32;
+    --ink:#EAEAF2; --dim:#A7A7C0; --faint:#6F6C88;
+    --violet:#7C5CFF; --cyan:#38E1FF; --ok:#4ADE80; --warn:#FFB020; --danger:#FF6B7A;
+  }
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]){
+      --ground:#F7F5FB; --surface:#FFFFFF; --surface2:#F2EFF9;
+      --line:#DFDAEC; --line-soft:#EAE6F4;
+      --ink:#1A1726; --dim:#565073; --faint:#8A84A6;
+      --violet:#5B3FD6; --cyan:#0E7C99; --ok:#1B8A4B; --warn:#9A6200; --danger:#C0324A;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;
+       -webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Chivo,sans-serif;letter-spacing:-.02em;margin:0}
+  button{font:inherit;cursor:pointer}
+  input,select,textarea{font:inherit;color:var(--ink)}
+  .mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .oculto{display:none !important}
+
+  /* ── login ── */
+  #login{min-height:100vh;display:grid;place-items:center;padding:24px}
+  .caja{width:100%;max-width:360px;text-align:center}
+  .marca{width:64px;height:64px;margin:0 auto 18px;display:block}
+  .campo{width:100%;padding:11px 13px;margin-top:9px;background:var(--surface);
+         border:1px solid var(--line);border-radius:9px;outline:none}
+  .campo:focus{border-color:var(--violet);box-shadow:0 0 0 3px color-mix(in srgb,var(--violet) 22%,transparent)}
+  .primario{width:100%;margin-top:14px;padding:11px;border:none;border-radius:999px;
+            background:linear-gradient(96deg,var(--violet),#5B8BFF);color:#fff;font-weight:700}
+  .primario:disabled{opacity:.45;cursor:default}
+  .error{color:var(--danger);font-size:13px;margin-top:12px;min-height:19px}
+
+  /* ── estructura ── */
+  header.top{display:flex;align-items:center;gap:14px;padding:14px 22px;
+             background:var(--surface);border-bottom:1px solid var(--line);
+             position:sticky;top:0;z-index:5;flex-wrap:wrap}
+  header.top .marca{width:26px;height:26px;margin:0}
+  .titulo{font-family:Chivo,sans-serif;font-weight:900;font-size:16px;letter-spacing:-.02em}
+  .crecer{flex:1}
+  .quien{font-size:12px;color:var(--faint)}
+  .link{background:none;border:none;color:var(--cyan);font-size:12.5px;font-weight:600;padding:0}
+  nav{display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap}
+  nav button{background:none;border:none;color:var(--dim);padding:8px 14px;border-radius:9px 9px 0 0;
+             font-size:13.5px;font-weight:500;border-bottom:2px solid transparent}
+  nav button.on{color:var(--ink);font-weight:600;border-bottom-color:var(--violet);
+                background:color-mix(in srgb,var(--violet) 12%,transparent)}
+  nav button .n{font-size:11px;color:var(--faint);margin-left:6px}
+  main{padding:18px 22px 80px;max-width:1280px}
+
+  /* ── tarjetas de resumen ── */
+  .resumen{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .kpi{background:var(--surface);border:1px solid var(--line-soft);border-radius:11px;padding:14px 16px}
+  .kpi .v{font-family:Chivo,sans-serif;font-weight:900;font-size:26px;line-height:1.1}
+  .kpi .e{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.09em;margin-top:3px}
+  .kpi.alerta .v{color:var(--warn)}
+
+  /* ── barra de acciones ── */
+  .barra{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .buscar{flex:1;min-width:180px;padding:9px 13px;background:var(--surface);
+          border:1px solid var(--line);border-radius:9px;outline:none}
+  .buscar:focus{border-color:var(--violet)}
+  .btn{padding:9px 15px;border-radius:999px;border:1px solid var(--line);
+       background:var(--surface);color:var(--ink);font-size:13px;font-weight:600}
+  .btn:hover{border-color:var(--violet)}
+  .btn.acento{background:linear-gradient(96deg,var(--violet),#5B8BFF);color:#fff;border:none}
+
+  /* ── tablas ── */
+  .tabla-caja{overflow-x:auto;border:1px solid var(--line-soft);border-radius:11px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle;white-space:nowrap}
+  th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+     color:var(--faint);font-weight:500;background:var(--surface2);position:sticky;top:0}
+  tbody tr:hover{background:color-mix(in srgb,var(--violet) 7%,transparent)}
+  tr:last-child td{border-bottom:none}
+  td.principal{font-weight:600;white-space:normal}
+  .vacio{padding:40px;text-align:center;color:var(--faint);font-size:14px}
+
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;
+        border:1px solid var(--line);color:var(--dim)}
+  .pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line));
+           background:color-mix(in srgb,var(--ok) 11%,transparent)}
+  .pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--line));
+             background:color-mix(in srgb,var(--warn) 11%,transparent)}
+  .pill.no{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line));
+           background:color-mix(in srgb,var(--danger) 11%,transparent)}
+
+  .barrita{width:70px;height:6px;border-radius:999px;background:color-mix(in srgb,var(--ink) 12%,transparent);
+           overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+  .barrita i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--cyan))}
+  .barrita.lleno i{background:var(--warn)}
+
+  .icono{background:none;border:none;color:var(--faint);padding:4px 6px;border-radius:6px;font-size:14px}
+  .icono:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 9%,transparent)}
+  .icono.peligro:hover{color:var(--danger)}
+
+  /* ── panel lateral ── */
+  .fondo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
+  .hoja{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--surface);
+        border-left:1px solid var(--line);z-index:21;padding:24px;overflow-y:auto}
+  .hoja h2{font-size:19px;margin-bottom:4px}
+  .hoja .ayuda{font-size:12.5px;color:var(--dim);margin:0 0 18px}
+  .hoja label{display:block;font-size:11.5px;font-weight:600;color:var(--dim);
+              text-transform:uppercase;letter-spacing:.07em;margin:15px 0 0}
+  .hoja .nota{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.45}
+  .fila{display:flex;gap:9px}
+  .fila .campo{flex:1}
+  .acciones{display:flex;gap:9px;margin-top:24px}
+  .acciones .primario{margin-top:0}
+  .btn-cancelar{padding:11px 18px;border-radius:999px;border:1px solid var(--line);
+                background:none;color:var(--dim);font-weight:600}
+
+  .aviso{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:40;
+         background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--ok);
+         border-radius:10px;padding:12px 18px;font-size:13.5px;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+  .aviso.mal{border-left-color:var(--danger)}
+  @media (max-width:640px){ th,td{padding:9px 10px} main{padding:14px} header.top{padding:12px 14px} }
+</style>
+</head>
+<body>
+
+<!-- ───────────────────────── login ───────────────────────── -->
+<div id="login">
+  <form class="caja" id="form-login">
+    <svg class="marca" viewBox="0 0 192.8 192.8" aria-hidden="true">
+      <g fill="#7C5CFF">
+        <polygon points="69.7,192.8 27.1,192.8 100.7,77.1 174.3,192.8 131.6,192.8 100.5,115.6"/>
+        <polygon points="192.8,49.1 192.8,0 0.3,83.6 0,107.6"/>
+      </g>
+    </svg>
+    <h1 style="font-size:21px">Licencias de Vault Finder</h1>
+    <p style="color:var(--dim);font-size:13px;margin:6px 0 20px">Entrá para administrar clientes y equipos.</p>
+    <input class="campo" type="email" id="email" placeholder="tu correo" autocomplete="username" required>
+    <input class="campo" type="password" id="pass" placeholder="contraseña" autocomplete="current-password" required>
+    <button class="primario" id="btn-entrar" type="submit">Entrar</button>
+    <div class="error" id="login-error"></div>
+  </form>
+</div>
+
+<!-- ───────────────────────── panel ───────────────────────── -->
+<div id="panel" class="oculto">
+  <header class="top">
+    <svg class="marca" viewBox="0 0 192.8 192.8" aria-hidden="true">
+      <g fill="#7C5CFF">
+        <polygon points="69.7,192.8 27.1,192.8 100.7,77.1 174.3,192.8 131.6,192.8 100.5,115.6"/>
+        <polygon points="192.8,49.1 192.8,0 0.3,83.6 0,107.6"/>
+      </g>
+    </svg>
+    <span class="titulo">Vault Finder</span>
+    <span class="crecer"></span>
+    <span class="quien" id="quien"></span>
+    <button class="link" id="btn-recargar">Actualizar</button>
+    <button class="link" id="btn-salir">Salir</button>
+  </header>
+
+  <nav>
+    <button data-vista="licencias" class="on">Licencias <span class="n" id="n-lic"></span></button>
+    <button data-vista="equipos">Equipos <span class="n" id="n-eq"></span></button>
+    <button data-vista="versiones">Versiones <span class="n" id="n-ver"></span></button>
+  </nav>
+
+  <main>
+    <!-- licencias -->
+    <section id="v-licencias">
+      <div class="resumen" id="kpis"></div>
+      <div class="barra">
+        <input class="buscar" id="buscar-lic" placeholder="Buscar cliente o clave…">
+        <button class="btn acento" id="btn-nueva">+ Nueva licencia</button>
+      </div>
+      <div class="tabla-caja"><table>
+        <thead><tr>
+          <th>Cliente</th><th>Clave</th><th>Equipos</th><th>Vence</th>
+          <th>Estado</th><th>Última actividad</th><th></th>
+        </tr></thead>
+        <tbody id="tb-lic"></tbody>
+      </table></div>
+    </section>
+
+    <!-- equipos -->
+    <section id="v-equipos" class="oculto">
+      <div class="barra">
+        <input class="buscar" id="buscar-eq" placeholder="Buscar equipo, cliente o versión…">
+      </div>
+      <div class="tabla-caja"><table>
+        <thead><tr>
+          <th>Equipo</th><th>Cliente</th><th>Versión</th><th>macOS</th>
+          <th>Última vez</th><th>Desde</th><th></th>
+        </tr></thead>
+        <tbody id="tb-eq"></tbody>
+      </table></div>
+    </section>
+
+    <!-- versiones -->
+    <section id="v-versiones" class="oculto">
+      <div class="barra"><span style="color:var(--dim);font-size:13px">
+        Las versiones se publican con <span class="mono">./release.sh</span>. Acá podés liberarlas o retirarlas.
+      </span></div>
+      <div class="tabla-caja"><table>
+        <thead><tr>
+          <th>Versión</th><th>Build</th><th>Estado</th><th>macOS mínimo</th>
+          <th>Subida</th><th>Notas</th><th></th>
+        </tr></thead>
+        <tbody id="tb-ver"></tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+
+<!-- hoja lateral -->
+<div id="fondo" class="fondo oculto"></div>
+<aside id="hoja" class="hoja oculto">
+  <h2 id="hoja-titulo">Nueva licencia</h2>
+  <p class="ayuda" id="hoja-ayuda">La clave se genera sola. Pasásela al cliente para que active la app.</p>
+  <form id="form-lic">
+    <label>Cliente</label>
+    <input class="campo" id="f-client" placeholder="Sudamérica Rugby" required>
+
+    <label>Correo de contacto</label>
+    <input class="campo" id="f-email" type="email" placeholder="contacto@club.com">
+
+    <label>Clave</label>
+    <div class="fila">
+      <input class="campo mono" id="f-key" required>
+      <button type="button" class="btn" id="btn-generar">Generar</button>
+    </div>
+    <p class="nota">Sin letras ni números que se confundan al dictarla por teléfono.</p>
+
+    <div class="fila">
+      <div style="flex:1">
+        <label>Equipos permitidos</label>
+        <input class="campo" id="f-seats" type="number" min="1" max="99" value="3" required>
+      </div>
+      <div style="flex:1">
+        <label>Vence</label>
+        <input class="campo" id="f-expires" type="date">
+      </div>
+    </div>
+    <p class="nota">Dejá el vencimiento vacío si la licencia no caduca.</p>
+
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13.5px;letter-spacing:0">
+      <input type="checkbox" id="f-active" checked style="width:16px;height:16px">
+      Licencia activa
+    </label>
+    <p class="nota">Al desactivarla, la app deja de exportar en todos sus equipos. No se borra nada.</p>
+
+    <label>Notas internas</label>
+    <textarea class="campo" id="f-notes" rows="2" placeholder="Cómo llegó, qué acordaron…"></textarea>
+
+    <div class="acciones">
+      <button type="submit" class="primario" id="btn-guardar">Guardar</button>
+      <button type="button" class="btn-cancelar" id="btn-cerrar">Cancelar</button>
+    </div>
+    <div class="error" id="hoja-error"></div>
+  </form>
+</aside>
+
+<script>
+const URL_BASE = "https://qreukyolinfdcdfnpgbp.supabase.co";
+const ANON     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyZXVreW9saW5mZGNkZm5wZ2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczODk2MzgsImV4cCI6MjEwMjk2NTYzOH0.C1Pqp0TY1dnUmhL4gW4FYOqqH76w9BMW05cSglDG65E";
+
+let sesion = JSON.parse(localStorage.getItem("vf_sesion") || "null");
+let licencias = [], equipos = [], versiones = [], editando = null;
+
+const $ = s => document.querySelector(s);
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function avisar(texto, mal) {
+  const d = document.createElement("div");
+  d.className = "aviso" + (mal ? " mal" : "");
+  d.textContent = texto;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3600);
+}
+
+/// Supabase da tokens que vencen a la hora. Antes de echar a nadie, se intenta
+/// renovar con el refresh_token: si sale, la llamada se repite sola y el usuario
+/// ni se entera. Solo se va al login si la renovación también falla.
+async function refrescar() {
+  if (!sesion?.refresh_token) return false;
+  try {
+    const r = await fetch(URL_BASE + "/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      headers: { apikey: ANON, "content-type": "application/json" },
+      body: JSON.stringify({ refresh_token: sesion.refresh_token })
+    });
+    if (!r.ok) return false;
+    sesion = await r.json();
+    localStorage.setItem("vf_sesion", JSON.stringify(sesion));
+    return true;
+  } catch { return false; }
+}
+
+async function api(ruta, opciones = {}, reintentar = true) {
+  const r = await fetch(URL_BASE + ruta, {
+    ...opciones,
+    headers: {
+      apikey: ANON,
+      Authorization: "Bearer " + (sesion?.access_token || ANON),
+      "content-type": "application/json",
+      ...(opciones.headers || {})
+    }
+  });
+  if (r.status === 401) {
+    if (reintentar && await refrescar()) return api(ruta, opciones, false);
+    salir();
+    throw new Error("Se cerró la sesión, entrá de nuevo.");
+  }
+  const texto = await r.text();
+  const datos = texto ? JSON.parse(texto) : null;
+  if (!r.ok) throw new Error(datos?.message || datos?.error_description || ("Error " + r.status));
+  return datos;
+}
+
+// ───────────────────────── sesión
+
+$("#form-login").addEventListener("submit", async e => {
+  e.preventDefault();
+  const b = $("#btn-entrar");
+  b.disabled = true; b.textContent = "Entrando…"; $("#login-error").textContent = "";
+  try {
+    const r = await fetch(URL_BASE + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { apikey: ANON, "content-type": "application/json" },
+      body: JSON.stringify({ email: $("#email").value.trim(), password: $("#pass").value })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || "No pude entrar.");
+    sesion = d;
+    localStorage.setItem("vf_sesion", JSON.stringify(d));
+    await entrar();
+  } catch (err) {
+    $("#login-error").textContent =
+      /invalid/i.test(err.message) ? "Correo o contraseña incorrectos." : err.message;
+  } finally { b.disabled = false; b.textContent = "Entrar"; }
+});
+
+function salir() {
+  localStorage.removeItem("vf_sesion");
+  sesion = null;
+  $("#panel").classList.add("oculto");
+  $("#login").classList.remove("oculto");
+}
+$("#btn-salir").addEventListener("click", salir);
+$("#btn-recargar").addEventListener("click", () => cargar());
+
+async function entrar() {
+  $("#login").classList.add("oculto");
+  $("#panel").classList.remove("oculto");
+  $("#quien").textContent = sesion?.user?.email || "";
+  await cargar();
+}
+
+// ───────────────────────── datos
+
+async function cargar() {
+  try {
+    [licencias, equipos, versiones] = await Promise.all([
+      api("/rest/v1/licencias_resumen?select=*&order=client"),
+      api("/rest/v1/activations?select=*&order=last_seen.desc"),
+      api("/rest/v1/versions?select=*&order=build.desc")
+    ]);
+  } catch (e) {
+    if (/permission|denied|policy/i.test(e.message)) {
+      avisar("Tu usuario no está en la lista de administradores.", true);
+    } else avisar(e.message, true);
+    return;
+  }
+  $("#n-lic").textContent = licencias.length;
+  $("#n-eq").textContent  = equipos.length;
+  $("#n-ver").textContent = versiones.length;
+  pintarKPIs(); pintarLicencias(); pintarEquipos(); pintarVersiones();
+}
+
+const fecha = t => t ? new Date(t).toLocaleDateString("es-AR",
+  { day: "2-digit", month: "short", year: "numeric" }) : "—";
+
+function hace(t) {
+  if (!t) return "—";
+  const min = (Date.now() - new Date(t)) / 60000;
+  if (min < 60) return "hace " + Math.max(1, Math.round(min)) + " min";
+  if (min < 1440) return "hace " + Math.round(min / 60) + " h";
+  const d = Math.round(min / 1440);
+  if (d < 30) return "hace " + d + (d === 1 ? " día" : " días");
+  return fecha(t);
+}
+
+function pintarKPIs() {
+  const activas = licencias.filter(l => l.active && !l.vencida).length;
+  const porVencer = licencias.filter(l =>
+    l.active && !l.vencida && l.dias_restantes !== null && l.dias_restantes <= 30).length;
+  const vencidas = licencias.filter(l => l.vencida || !l.active).length;
+  const semana = equipos.filter(e =>
+    (Date.now() - new Date(e.last_seen)) < 7 * 864e5).length;
+
+  $("#kpis").innerHTML = [
+    ["Licencias activas", activas, ""],
+    ["Equipos registrados", equipos.length, ""],
+    ["Activos esta semana", semana, ""],
+    ["Vencen en 30 días", porVencer, porVencer ? "alerta" : ""],
+    ["Vencidas o de baja", vencidas, ""]
+  ].map(([e, v, c]) =>
+    `<div class="kpi ${c}"><div class="v">${v}</div><div class="e">${esc(e)}</div></div>`
+  ).join("");
+}
+
+function estadoLic(l) {
+  if (!l.active)  return '<span class="pill no">De baja</span>';
+  if (l.vencida)  return '<span class="pill no">Vencida</span>';
+  if (l.dias_restantes !== null && l.dias_restantes <= 30)
+    return `<span class="pill warn">Vence en ${l.dias_restantes} d</span>`;
+  return '<span class="pill ok">Vigente</span>';
+}
+
+function pintarLicencias() {
+  const q = $("#buscar-lic").value.toLowerCase();
+  const filas = licencias.filter(l =>
+    !q || (l.client + " " + l.key + " " + (l.email || "")).toLowerCase().includes(q));
+
+  $("#tb-lic").innerHTML = filas.length ? filas.map(l => {
+    const frac = l.seats ? Math.min(1, l.equipos_usados / l.seats) : 0;
+    return `<tr>
+      <td class="principal">${esc(l.client)}
+        ${l.email ? `<div style="font-size:11.5px;color:var(--faint);font-weight:400">${esc(l.email)}</div>` : ""}</td>
+      <td class="mono" style="font-size:12.5px">${esc(l.key)}</td>
+      <td><span class="barrita ${frac >= 1 ? "lleno" : ""}"><i style="width:${frac * 100}%"></i></span>
+          <span class="mono">${l.equipos_usados}/${l.seats}</span></td>
+      <td>${l.expires_at ? fecha(l.expires_at) : "sin vencimiento"}</td>
+      <td>${estadoLic(l)}</td>
+      <td style="color:var(--dim)">${hace(l.ultima_actividad)}</td>
+      <td style="text-align:right">
+        <button class="icono" data-editar="${esc(l.key)}" title="Editar">✎</button>
+        <button class="icono peligro" data-borrar="${esc(l.key)}" title="Eliminar">✕</button>
+      </td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="vacio">
+      ${licencias.length ? "Nada coincide con la búsqueda." : "Todavía no hay licencias. Creá la primera."}
+    </td></tr>`;
+}
+
+/// Marca los equipos que todavía no se actualizaron. Es la pregunta que uno se
+/// hace mirando esta tabla: ¿quién quedó atrás?
+function atrasada(v) {
+  const ultima = versiones.find(x => x.published);
+  if (!ultima || !v || v === ultima.version) return "";
+  return ` <span class="pill warn" title="La última es ${esc(ultima.version)}">atrasada</span>`;
+}
+
+function pintarEquipos() {
+  const q = $("#buscar-eq").value.toLowerCase();
+  const cliente = k => (licencias.find(l => l.key === k) || {}).client || k;
+  const filas = equipos.filter(e =>
+    !q || ((e.machine_name || "") + " " + cliente(e.license_key) + " " +
+           (e.app_version || "")).toLowerCase().includes(q));
+
+  $("#tb-eq").innerHTML = filas.length ? filas.map(e => `<tr>
+      <td class="principal">${esc(e.machine_name || "Sin nombre")}
+        <div class="mono" style="font-size:10.5px;color:var(--faint);font-weight:400">${esc((e.machine_id || "").slice(0, 18))}…</div></td>
+      <td>${esc(cliente(e.license_key))}</td>
+      <td class="mono">${esc(e.app_version || "—")}${atrasada(e.app_version)}</td>
+      <td class="mono" style="color:var(--dim)">${esc(e.os_version || "—")}</td>
+      <td style="color:var(--dim)">${hace(e.last_seen)}</td>
+      <td style="color:var(--faint)">${fecha(e.first_seen)}</td>
+      <td style="text-align:right">
+        <button class="icono peligro" data-liberar="${esc(e.license_key)}|${esc(e.machine_id)}"
+                title="Liberar este equipo">✕</button>
+      </td></tr>`).join("")
+    : `<tr><td colspan="7" class="vacio">Ningún equipo todavía.</td></tr>`;
+}
+
+function pintarVersiones() {
+  $("#tb-ver").innerHTML = versiones.length ? versiones.map(v => `<tr>
+      <td class="principal mono">${esc(v.version)}</td>
+      <td class="mono">${v.build}</td>
+      <td>${v.published ? '<span class="pill ok">Publicada</span>'
+                        : '<span class="pill">Sin publicar</span>'}</td>
+      <td class="mono" style="color:var(--dim)">${esc(v.min_macos)}</td>
+      <td style="color:var(--dim)">${fecha(v.created_at)}</td>
+      <td style="white-space:normal;max-width:420px;color:var(--dim);font-size:12.5px">
+        ${esc((v.notes || "").split("\n")[0])}</td>
+      <td style="text-align:right">
+        <button class="btn" data-publicar="${esc(v.version)}" style="padding:5px 11px;font-size:12px">
+          ${v.published ? "Retirar" : "Publicar"}</button>
+      </td></tr>`).join("")
+    : `<tr><td colspan="7" class="vacio">Todavía no publicaste ninguna versión.</td></tr>`;
+}
+
+// ───────────────────────── interacción
+
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  ["licencias", "equipos", "versiones"].forEach(v =>
+    $("#v-" + v).classList.toggle("oculto", v !== b.dataset.vista));
+}));
+
+$("#buscar-lic").addEventListener("input", pintarLicencias);
+$("#buscar-eq").addEventListener("input", pintarEquipos);
+
+document.body.addEventListener("click", async ev => {
+  const b = ev.target.closest("button"); if (!b) return;
+
+  if (b.dataset.editar) abrirHoja(licencias.find(l => l.key === b.dataset.editar));
+
+  if (b.dataset.borrar) {
+    const l = licencias.find(x => x.key === b.dataset.borrar);
+    if (!confirm(`¿Eliminar la licencia de ${l.client}?\n\nSe borran también sus ${l.equipos_usados} equipo(s). No se puede deshacer.`)) return;
+    try {
+      await api("/rest/v1/licenses?key=eq." + encodeURIComponent(l.key), { method: "DELETE" });
+      avisar("Licencia eliminada"); cargar();
+    } catch (e) { avisar(e.message, true); }
+  }
+
+  if (b.dataset.liberar) {
+    const [k, m] = b.dataset.liberar.split("|");
+    if (!confirm("¿Liberar este equipo?\n\nQueda un lugar libre en la licencia y esa Mac tendrá que activarse de nuevo.")) return;
+    try {
+      await api(`/rest/v1/activations?license_key=eq.${encodeURIComponent(k)}&machine_id=eq.${encodeURIComponent(m)}`,
+                { method: "DELETE" });
+      avisar("Equipo liberado"); cargar();
+    } catch (e) { avisar(e.message, true); }
+  }
+
+  if (b.dataset.publicar) {
+    const v = versiones.find(x => x.version === b.dataset.publicar);
+    try {
+      await api("/rest/v1/versions?version=eq." + encodeURIComponent(v.version),
+                { method: "PATCH", body: JSON.stringify({ published: !v.published }) });
+      avisar(v.published ? "Versión retirada" : "Versión publicada"); cargar();
+    } catch (e) { avisar(e.message, true); }
+  }
+});
+
+// ───────────────────────── hoja lateral
+
+function abrirHoja(l) {
+  editando = l || null;
+  $("#hoja-titulo").textContent = l ? "Editar licencia" : "Nueva licencia";
+  $("#hoja-ayuda").textContent = l
+    ? `${l.equipos_usados} de ${l.seats} equipos en uso.`
+    : "La clave se genera sola. Pasásela al cliente para que active la app.";
+  $("#f-client").value  = l?.client  || "";
+  $("#f-email").value   = l?.email   || "";
+  $("#f-key").value     = l?.key     || "";
+  $("#f-seats").value   = l?.seats   ?? 3;
+  $("#f-expires").value = l?.expires_at || "";
+  $("#f-active").checked = l ? l.active : true;
+  $("#f-notes").value   = l?.notes || "";
+  $("#f-key").readOnly  = !!l;
+  $("#btn-generar").classList.toggle("oculto", !!l);
+  $("#hoja-error").textContent = "";
+  $("#hoja").classList.remove("oculto"); $("#fondo").classList.remove("oculto");
+  if (!l) generarClave();
+  setTimeout(() => $("#f-client").focus(), 60);
+}
+function cerrarHoja() {
+  $("#hoja").classList.add("oculto"); $("#fondo").classList.add("oculto"); editando = null;
+}
+$("#btn-nueva").addEventListener("click", () => abrirHoja(null));
+$("#btn-cerrar").addEventListener("click", cerrarHoja);
+$("#fondo").addEventListener("click", cerrarHoja);
+document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarHoja(); });
+
+/// La clave es solo un identificador: se arma acá con `crypto`, sin depender del
+/// servidor. Se evitan las letras y números que se confunden al dictarla por
+/// teléfono (nada de O/0, I/1).
+function generarClave() {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bloque = () => Array.from(crypto.getRandomValues(new Uint8Array(4)),
+                                  b => abc[b % abc.length]).join("");
+  $("#f-key").value = `VF-${bloque()}-${bloque()}-${bloque()}`;
+}
+$("#btn-generar").addEventListener("click", generarClave);
+
+$("#form-lic").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#btn-guardar");
+  btn.disabled = true; btn.textContent = "Guardando…"; $("#hoja-error").textContent = "";
+  const datos = {
+    key: $("#f-key").value.trim().toUpperCase(),
+    client: $("#f-client").value.trim(),
+    email: $("#f-email").value.trim() || null,
+    seats: parseInt($("#f-seats").value, 10),
+    expires_at: $("#f-expires").value || null,
+    active: $("#f-active").checked,
+    notes: $("#f-notes").value.trim() || null
+  };
+  try {
+    if (editando) {
+      await api("/rest/v1/licenses?key=eq." + encodeURIComponent(editando.key),
+                { method: "PATCH", body: JSON.stringify(datos) });
+      avisar("Licencia actualizada");
+    } else {
+      await api("/rest/v1/licenses", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify(datos)
+      });
+      avisar("Licencia creada · " + datos.key);
+    }
+    cerrarHoja(); cargar();
+  } catch (err) {
+    $("#hoja-error").textContent = /duplicate|unique/i.test(err.message)
+      ? "Ya existe una licencia con esa clave." : err.message;
+  } finally { btn.disabled = false; btn.textContent = "Guardar"; }
+});
+
+// ───────────────────────── arranque
+if (sesion?.access_token) entrar(); else $("#login").classList.remove("oculto");
+</script>
+</body>
+</html>

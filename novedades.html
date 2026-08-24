@@ -60,6 +60,14 @@
   li{margin:7px 0;font-size:14.5px}
   li::marker{color:var(--violet)}
 
+  .idiomas{display:flex;gap:6px;justify-content:center;margin-top:18px}
+  .solapa{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;
+          letter-spacing:.06em;text-decoration:none;color:var(--faint);
+          padding:4px 10px;border-radius:999px;border:1px solid var(--line-soft)}
+  .solapa:hover{color:var(--ink);border-color:var(--line)}
+  .solapa.on{color:#fff;border-color:transparent;
+             background:linear-gradient(96deg,var(--violet),var(--azul))}
+
   footer{margin-top:56px;text-align:center;color:var(--faint);font-size:12.5px;
          border-top:1px solid var(--line-soft);padding-top:22px}
   @media (max-width:520px){ .marco{padding:36px 16px 64px} .fecha{margin-left:0;width:100%} }
@@ -76,11 +84,28 @@
     </svg>
     <h1>Novedades</h1>
     <p class="bajada">Todo lo que fue cambiando en Vault Finder.</p>
+    <nav class="idiomas">
+      <a class="solapa on" href="novedades.html">ESP</a>
+      <a class="solapa" href="novedades-en.html">ENG</a>
+      <a class="solapa" href="novedades-fr.html">FRA</a>
+      <a class="solapa" href="novedades-it.html">ITA</a>
+    </nav>
   </header>
 
     <article class="version primera">
       <div class="sello">
-        <span class="num">1.13.0</span> <span class="ahora">la más nueva</span>
+        <span class="num">1.14.0</span> <span class="ahora">la más nueva</span>
+        <span class="fecha">24 de agosto de 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>La página de novedades se abre en el mismo idioma en que estés usando la app, con las notas de cada versión traducidas</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.13.0</span>
         <span class="fecha">24 de agosto de 2026</span>
       </div>
       <div class="cuerpo">
@@ -250,7 +275,7 @@
     </article>
 
   <footer>
-    14 versiones · la app se actualiza sola al abrirse
+    15 versiones · la app se actualiza sola al abrirse
   </footer>
 </div>
 </body>

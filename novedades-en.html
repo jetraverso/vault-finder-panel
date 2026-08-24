@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What's new in Vault Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#0C0918; --surface:#14121F; --line:#2A2740; --line-soft:#211E32;
+    --ink:#EAEAF2; --dim:#A7A7C0; --faint:#6F6C88;
+    --violet:#7C5CFF; --azul:#5B8BFF; --cyan:#38E1FF;
+  }
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]){
+      --ground:#F7F5FB; --surface:#FFFFFF; --line:#DFDAEC; --line-soft:#EAE6F4;
+      --ink:#1A1726; --dim:#565073; --faint:#8A84A6;
+      --violet:#5B3FD6; --azul:#3B5FD6; --cyan:#0E7C99;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);
+       font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.6;
+       -webkit-font-smoothing:antialiased}
+  .marco{max-width:760px;margin:0 auto;padding:56px 24px 96px}
+
+  header{text-align:center;margin-bottom:52px}
+  .logo{width:60px;height:60px;margin:0 auto 16px;display:block}
+  h1{font-family:Chivo,sans-serif;font-weight:900;font-size:clamp(28px,5vw,38px);
+     letter-spacing:-.03em;margin:0}
+  .bajada{color:var(--dim);font-size:15px;margin-top:8px}
+
+  /* la línea de tiempo */
+  .version{position:relative;padding-left:30px;padding-bottom:34px}
+  .version::before{content:"";position:absolute;left:5px;top:12px;bottom:-6px;width:2px;
+                   background:var(--line-soft)}
+  .version:last-child::before{display:none}
+  .version::after{content:"";position:absolute;left:0;top:7px;width:12px;height:12px;
+                  border-radius:50%;background:var(--surface);
+                  border:2px solid var(--line)}
+  .version.primera::after{background:linear-gradient(140deg,var(--violet),var(--azul));
+                          border-color:transparent;
+                          box-shadow:0 0 0 4px color-mix(in srgb,var(--violet) 22%,transparent)}
+
+  .sello{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .num{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:17px;
+       color:var(--ink);letter-spacing:-.01em}
+  .version.primera .num{color:var(--violet);font-weight:600}
+  .ahora{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+         color:#fff;background:linear-gradient(96deg,var(--violet),var(--azul));
+         padding:3px 9px;border-radius:999px}
+  .fecha{color:var(--faint);font-size:12.5px;margin-left:auto}
+
+  .cuerpo{background:var(--surface);border:1px solid var(--line-soft);
+          border-radius:12px;padding:16px 20px}
+  .intro{margin:0 0 10px;color:var(--dim);font-size:14.5px}
+  ul{margin:0;padding-left:18px}
+  li{margin:7px 0;font-size:14.5px}
+  li::marker{color:var(--violet)}
+
+  .idiomas{display:flex;gap:6px;justify-content:center;margin-top:18px}
+  .solapa{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;
+          letter-spacing:.06em;text-decoration:none;color:var(--faint);
+          padding:4px 10px;border-radius:999px;border:1px solid var(--line-soft)}
+  .solapa:hover{color:var(--ink);border-color:var(--line)}
+  .solapa.on{color:#fff;border-color:transparent;
+             background:linear-gradient(96deg,var(--violet),var(--azul))}
+
+  footer{margin-top:56px;text-align:center;color:var(--faint);font-size:12.5px;
+         border-top:1px solid var(--line-soft);padding-top:22px}
+  @media (max-width:520px){ .marco{padding:36px 16px 64px} .fecha{margin-left:0;width:100%} }
+</style>
+</head>
+<body>
+<div class="marco">
+  <header>
+    <svg class="logo" viewBox="0 0 192.8 192.8" aria-hidden="true">
+      <g fill="#7C5CFF">
+        <polygon points="69.7,192.8 27.1,192.8 100.7,77.1 174.3,192.8 131.6,192.8 100.5,115.6"/>
+        <polygon points="192.8,49.1 192.8,0 0.3,83.6 0,107.6"/>
+      </g>
+    </svg>
+    <h1>What's new</h1>
+    <p class="bajada">Everything that has changed in Vault Finder.</p>
+    <nav class="idiomas">
+      <a class="solapa" href="novedades.html">ESP</a>
+      <a class="solapa on" href="novedades-en.html">ENG</a>
+      <a class="solapa" href="novedades-fr.html">FRA</a>
+      <a class="solapa" href="novedades-it.html">ITA</a>
+    </nav>
+  </header>
+
+    <article class="version primera">
+      <div class="sello">
+        <span class="num">1.14.0</span> <span class="ahora">latest</span>
+        <span class="fecha">August 24, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>La página de novedades se abre en el mismo idioma en que estés usando la app, con las notas de cada versión traducidas</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.13.0</span>
+        <span class="fecha">August 24, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Info button at the top right: it opens the what's-new page with everything that changed in each version</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.12.0</span>
+        <span class="fecha">August 24, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Vault Finder speaks four languages: Spanish, English, French and Italian. The button at the top right shows which one it's in and lets you change it on the spot</li>
+        <li>The first time it starts in the system language, and you can leave it that way or pin one</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.11.0</span>
+        <span class="fecha">August 24, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Double-click the top strip to zoom the window or go back to its previous size, like any macOS window. It respects what you chose in System Settings: zoom, minimise or do nothing</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.10.0</span>
+        <span class="fecha">August 24, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>The app tells you when the saved index was built by an earlier version, with a button to re-index right there. Before, after updating you had to remember to re-index, and without that the improvements didn't show</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.9.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Fixed: composers using a video stored in ANOTHER vault in the same folder always came out with no video. They're found now. In a collection of 53 vaults, 130 lost actions turned up, spread across 7 vaults</li>
+        <li>After updating it's worth re-indexing to recover them</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.8.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Vault Finder now has its own icon: you'll see it in the Dock, in Applications and when switching apps with Command + Tab</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.7.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Fixed: some vaults were indexed entirely as "no video". Angles stores the videos in two different places depending on the machine, and Vault Finder only looked at one. It now finds both, so those vaults can be viewed and exported normally</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.6.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Filters combine with AND, OR and NOT. Click the label between two filters to change it: "AND" requires both, "OR" needs just one, "NOT" leaves out the actions that have it</li>
+        <li>They read top to bottom, like a sentence: ONLY Try, OR Penalty, AND First half, NOT Error. Since the order matters, you can move a filter with the right button</li>
+        <li>The "Choose filters" button is now wider, so it doesn't look so tall</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.5.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>Updating is a single click: the app downloads the new version, installs it and restarts by itself. No more pressing "Restart" afterwards</li>
+        <li>If you're exporting or indexing, it waits until you're done: in that case it leaves the button so you can restart whenever you like</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.4.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>The expiry notice appears as soon as you activate the license, not the next time you open the app</li>
+        <li>The remaining days are counted by date, not by hours: a license expiring tomorrow says "expires tomorrow" at any time of day, and on the last day it says "expires today"</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.3.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>No more Keychain password prompts. The license key is now stored inside the app itself, so macOS never asks again — not even after an update</li>
+        <li>The license window no longer shows stale data when the key stops being valid: it says what happened instead of showing a client and an expiry that no longer hold</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.2.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>You can change the license from inside the app: when a notice appears at the top, there's a button next to the message to sort it out without leaving Vault Finder</li>
+        <li>License button always within reach, top right, even when there's no notice</li>
+        <li>You can release the Mac to move the license to another one: the slot frees up immediately and the key can be activated on the new machine</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.1.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <ul>
+        <li>The app updates itself: on opening it tells you if there's a new version and installs it in one click</li>
+        <li>Per-client license, with an expiry date and a limit of Macs</li>
+        <li>Proof that the updater works end to end</li>
+        </ul>
+      </div>
+    </article>
+    <article class="version">
+      <div class="sello">
+        <span class="num">1.0.0</span>
+        <span class="fecha">August 22, 2026</span>
+      </div>
+      <div class="cuerpo">
+        <p class="intro">First distributable version.</p>
+        <ul>
+        <li>Searches actions across every Angles Vault in a folder: by action, qualifier, attribute, camera, stars or notes</li>
+        <li>Builds a new vault from the selection, as a timeline and/or composer</li>
+        <li>Takes every camera into the exported vault, in sync</li>
+        <li>Preview the selection without exporting anything, switching cameras with keys 1-9</li>
+        <li>When the export finishes, it opens the vault in Angles</li>
+        </ul>
+      </div>
+    </article>
+
+  <footer>
+    15 versions · the app updates itself when it opens
+  </footer>
+</div>
+</body>
+</html>

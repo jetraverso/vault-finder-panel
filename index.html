@@ -150,6 +150,8 @@
     <button class="primario" id="btn-entrar" type="submit">Entrar</button>
     <button type="button" class="link" id="btn-registro"
             style="margin-top:14px">¿Primera vez? Crear cuenta</button>
+    <button type="button" class="link" id="btn-olvide"
+            style="margin-top:8px;color:var(--faint)">Olvidé mi contraseña</button>
     <div class="error" id="login-error"></div>
   </form>
 </div>
@@ -167,6 +169,7 @@
     <span class="crecer"></span>
     <span class="quien" id="quien"></span>
     <span class="pill" id="mi-rol" style="font-size:10px"></span>
+    <button class="link" id="btn-clave">Cambiar contraseña</button>
     <button class="link" id="btn-recargar">Actualizar</button>
     <button class="link" id="btn-salir">Salir</button>
   </header>
@@ -260,6 +263,26 @@
 
 <!-- hoja lateral -->
 <div id="fondo" class="fondo oculto"></div>
+
+<aside id="hoja-clave" class="hoja oculto">
+  <h2>Cambiar contraseña</h2>
+  <p class="ayuda">La tuya, la de esta cuenta. Nadie más la ve.</p>
+  <form id="form-clave">
+    <label>Contraseña nueva</label>
+    <input class="campo" id="c-nueva" type="password" autocomplete="new-password"
+           minlength="6" required>
+    <p class="nota">Al menos 6 caracteres.</p>
+
+    <label>Repetila</label>
+    <input class="campo" id="c-otra" type="password" autocomplete="new-password" required>
+
+    <div class="acciones">
+      <button type="submit" class="primario" id="c-guardar">Cambiarla</button>
+      <button type="button" class="btn-cancelar" id="c-cancelar">Cancelar</button>
+    </div>
+    <div class="error" id="clave-error"></div>
+  </form>
+</aside>
 
 <aside id="hoja-usr" class="hoja oculto">
   <h2 id="usr-titulo">Dar acceso</h2>
@@ -740,8 +763,10 @@ function cerrarHoja() {
 }
 $("#btn-nueva").addEventListener("click", () => abrirHoja(null));
 $("#btn-cerrar").addEventListener("click", cerrarHoja);
-$("#fondo").addEventListener("click", cerrarHoja);
-document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarHoja(); });
+$("#fondo").addEventListener("click", () => { cerrarHoja(); cerrarUsuario(); cerrarClave(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { cerrarHoja(); cerrarUsuario(); cerrarClave(); }
+});
 
 /// La clave es solo un identificador: se arma acá con `crypto`, sin depender del
 /// servidor. Se evitan las letras y números que se confunden al dictarla por
@@ -883,6 +908,60 @@ $("#btn-registro").addEventListener("click", async () => {
     $("#login-error").textContent = /registered|already/i.test(e.message)
       ? "Ese correo ya tiene cuenta. Entrá con tu contraseña." : e.message;
   }
+});
+
+// ───────────────────────── contraseña
+
+function abrirClave() {
+  $("#c-nueva").value = ""; $("#c-otra").value = ""; $("#clave-error").textContent = "";
+  $("#hoja-clave").classList.remove("oculto"); $("#fondo").classList.remove("oculto");
+  setTimeout(() => $("#c-nueva").focus(), 60);
+}
+function cerrarClave() {
+  $("#hoja-clave").classList.add("oculto"); $("#fondo").classList.add("oculto");
+  $("#c-nueva").value = ""; $("#c-otra").value = "";
+}
+$("#btn-clave").addEventListener("click", abrirClave);
+$("#c-cancelar").addEventListener("click", cerrarClave);
+
+$("#form-clave").addEventListener("submit", async e => {
+  e.preventDefault();
+  const a = $("#c-nueva").value, b = $("#c-otra").value;
+  if (a !== b) { $("#clave-error").textContent = "Las dos no coinciden."; return; }
+  const btn = $("#c-guardar");
+  btn.disabled = true; btn.textContent = "Cambiando…"; $("#clave-error").textContent = "";
+  try {
+    // la cambia la propia persona con su sesión; el panel nunca la guarda
+    const r = await fetch(URL_BASE + "/auth/v1/user", {
+      method: "PUT",
+      headers: { apikey: ANON, Authorization: "Bearer " + sesion.access_token,
+                 "content-type": "application/json" },
+      body: JSON.stringify({ password: a })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.msg || d.error_description || "No pude cambiarla.");
+    cerrarClave();
+    avisar("Contraseña cambiada");
+  } catch (err) {
+    $("#clave-error").textContent = /should be different|same/i.test(err.message)
+      ? "Esa es la que ya tenías. Poné una distinta." : err.message;
+  } finally { btn.disabled = false; btn.textContent = "Cambiarla"; }
+});
+
+$("#btn-olvide").addEventListener("click", async () => {
+  const email = $("#email").value.trim();
+  if (!email) { $("#login-error").textContent = "Escribí tu correo y tocá de nuevo."; return; }
+  $("#login-error").textContent = "";
+  try {
+    const r = await fetch(URL_BASE + "/auth/v1/recover", {
+      method: "POST", headers: { apikey: ANON, "content-type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.msg || "No pude enviarlo."); }
+    $("#login-error").style.color = "var(--ok)";
+    $("#login-error").textContent = "Si ese correo tiene cuenta, te llega un mail para " +
+      "cambiar la contraseña.";
+  } catch (e) { $("#login-error").textContent = e.message; }
 });
 
 // ───────────────────────── arranque

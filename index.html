@@ -109,6 +109,13 @@
   .icono.grande{font-size:17px;padding:3px 7px}
   body.viewer .solo-admin{display:none !important}
 
+  th[data-orden]{cursor:pointer;user-select:none}
+  th[data-orden]:hover{color:var(--ink)}
+  th[data-orden] .flecha{opacity:0;margin-left:5px;font-size:9px}
+  th[data-orden]:hover .flecha{opacity:.45}
+  th[data-orden].ordenando{color:var(--violet)}
+  th[data-orden].ordenando .flecha{opacity:1}
+
   /* ── panel lateral ── */
   .fondo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
   .hoja{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--surface);
@@ -191,8 +198,13 @@
       </div>
       <div class="tabla-caja"><table>
         <thead><tr>
-          <th>Cliente</th><th>Clave</th><th>Equipos</th><th>Vence</th>
-          <th>Estado</th><th>Última actividad</th><th></th>
+          <th data-tabla="lic" data-orden="client">Cliente<span class="flecha"></span></th>
+          <th data-tabla="lic" data-orden="key">Clave<span class="flecha"></span></th>
+          <th data-tabla="lic" data-orden="equipos_usados">Equipos<span class="flecha"></span></th>
+          <th data-tabla="lic" data-orden="expires_at">Vence<span class="flecha"></span></th>
+          <th data-tabla="lic" data-orden="estado">Estado<span class="flecha"></span></th>
+          <th data-tabla="lic" data-orden="ultima_actividad">Última actividad<span class="flecha"></span></th>
+          <th></th>
         </tr></thead>
         <tbody id="tb-lic"></tbody>
       </table></div>
@@ -205,8 +217,13 @@
       </div>
       <div class="tabla-caja"><table>
         <thead><tr>
-          <th>Equipo</th><th>Cliente</th><th>Versión</th><th>macOS</th>
-          <th>Última vez</th><th>Desde</th><th></th>
+          <th data-tabla="eq" data-orden="machine_name">Equipo<span class="flecha"></span></th>
+          <th data-tabla="eq" data-orden="cliente">Cliente<span class="flecha"></span></th>
+          <th data-tabla="eq" data-orden="app_version">Versión<span class="flecha"></span></th>
+          <th data-tabla="eq" data-orden="os_version">macOS<span class="flecha"></span></th>
+          <th data-tabla="eq" data-orden="last_seen">Última vez<span class="flecha"></span></th>
+          <th data-tabla="eq" data-orden="first_seen">Desde<span class="flecha"></span></th>
+          <th></th>
         </tr></thead>
         <tbody id="tb-eq"></tbody>
       </table></div>
@@ -219,8 +236,12 @@
       </span></div>
       <div class="tabla-caja"><table>
         <thead><tr>
-          <th>Versión</th><th>Build</th><th>Estado</th><th>macOS mínimo</th>
-          <th>Subida</th><th>Notas</th><th></th><th></th>
+          <th data-tabla="ver" data-orden="build">Versión<span class="flecha"></span></th>
+          <th data-tabla="ver" data-orden="build">Build<span class="flecha"></span></th>
+          <th data-tabla="ver" data-orden="published">Estado<span class="flecha"></span></th>
+          <th data-tabla="ver" data-orden="min_macos">macOS mínimo<span class="flecha"></span></th>
+          <th data-tabla="ver" data-orden="created_at">Subida<span class="flecha"></span></th>
+          <th>Notas</th><th></th><th></th>
         </tr></thead>
         <tbody id="tb-ver"></tbody>
       </table></div>
@@ -246,7 +267,11 @@
       </div>
       <div class="tabla-caja"><table>
         <thead><tr>
-          <th>Correo</th><th>Nombre</th><th>Puede</th><th>Desde</th><th></th>
+          <th data-tabla="usr" data-orden="email">Correo<span class="flecha"></span></th>
+          <th data-tabla="usr" data-orden="nombre">Nombre<span class="flecha"></span></th>
+          <th data-tabla="usr" data-orden="rol">Puede<span class="flecha"></span></th>
+          <th data-tabla="usr" data-orden="created_at">Desde<span class="flecha"></span></th>
+          <th></th>
         </tr></thead>
         <tbody id="tb-usr"></tbody>
       </table></div>
@@ -506,6 +531,7 @@ async function cargar() {
   $("#n-ver").textContent = versiones.length;
   $("#n-usr").textContent = usuarios.length;
   pintarKPIs(); pintarLicencias(); pintarEquipos(); pintarVersiones(); pintarUsuarios();
+  pintarCabeceras();
 }
 
 const fecha = t => t ? new Date(t).toLocaleDateString("es-AR",
@@ -520,6 +546,63 @@ function hace(t) {
   if (d < 30) return "hace " + d + (d === 1 ? " día" : " días");
   return fecha(t);
 }
+
+/// Por qué columna está ordenada cada tabla y en qué sentido.
+const orden = { lic: null, eq: null, ver: { campo: "build", dir: -1 }, usr: null };
+
+/// Cómo sacar el valor de cada columna. Las que no son un campo directo —el
+/// estado de una licencia, el cliente de un equipo— se calculan acá.
+const valores = {
+  lic: {
+    estado: l => !l.active ? 3 : (l.vencida ? 2 : (l.dias_restantes !== null && l.dias_restantes <= 30 ? 1 : 0)),
+  },
+  eq: {
+    cliente: e => (licencias.find(l => l.key === e.license_key) || {}).client || e.license_key,
+  },
+  ver: {},
+  usr: { rol: u => (u.rol ?? "admin") },
+};
+
+/// Ordena una copia de la lista. Los vacíos van siempre al final, sin importar
+/// el sentido: una licencia sin vencimiento no es "la más próxima a vencer".
+function ordenar(lista, tabla) {
+  const o = orden[tabla];
+  if (!o) return lista;
+  const sacar = valores[tabla][o.campo] || (x => x[o.campo]);
+  return [...lista].sort((a, b) => {
+    const va = sacar(a), vb = sacar(b);
+    const na = va === null || va === undefined || va === "";
+    const nb = vb === null || vb === undefined || vb === "";
+    if (na && nb) return 0;
+    if (na) return 1;
+    if (nb) return -1;
+    if (typeof va === "number" && typeof vb === "number") return (va - vb) * o.dir;
+    if (typeof va === "boolean") return ((va ? 1 : 0) - (vb ? 1 : 0)) * o.dir;
+    return String(va).localeCompare(String(vb), "es", { numeric: true, sensitivity: "base" }) * o.dir;
+  });
+}
+
+/// Marca la cabecera activa con su flecha.
+function pintarCabeceras() {
+  document.querySelectorAll("th[data-orden]").forEach(th => {
+    const o = orden[th.dataset.tabla];
+    const activa = o && o.campo === th.dataset.orden;
+    th.classList.toggle("ordenando", !!activa);
+    th.querySelector(".flecha").textContent = activa ? (o.dir === 1 ? "▲" : "▼") : "▲";
+  });
+}
+
+document.addEventListener("click", ev => {
+  const th = ev.target.closest("th[data-orden]");
+  if (!th) return;
+  const t = th.dataset.tabla, campo = th.dataset.orden;
+  // mismo campo → se da vuelta; campo nuevo → arranca ascendente
+  orden[t] = (orden[t] && orden[t].campo === campo)
+    ? { campo, dir: -orden[t].dir }
+    : { campo, dir: 1 };
+  ({ lic: pintarLicencias, eq: pintarEquipos, ver: pintarVersiones, usr: pintarUsuarios })[t]();
+  pintarCabeceras();
+});
 
 function pintarKPIs() {
   const activas = licencias.filter(l => l.active && !l.vencida).length;
@@ -550,8 +633,8 @@ function estadoLic(l) {
 
 function pintarLicencias() {
   const q = $("#buscar-lic").value.toLowerCase();
-  const filas = licencias.filter(l =>
-    !q || (l.client + " " + l.key + " " + (l.email || "")).toLowerCase().includes(q));
+  const filas = ordenar(licencias.filter(l =>
+    !q || (l.client + " " + l.key + " " + (l.email || "")).toLowerCase().includes(q)), "lic");
 
   $("#tb-lic").innerHTML = filas.length ? filas.map(l => {
     const frac = l.seats ? Math.min(1, l.equipos_usados / l.seats) : 0;
@@ -584,9 +667,9 @@ function atrasada(v) {
 function pintarEquipos() {
   const q = $("#buscar-eq").value.toLowerCase();
   const cliente = k => (licencias.find(l => l.key === k) || {}).client || k;
-  const filas = equipos.filter(e =>
+  const filas = ordenar(equipos.filter(e =>
     !q || ((e.machine_name || "") + " " + cliente(e.license_key) + " " +
-           (e.app_version || "")).toLowerCase().includes(q));
+           (e.app_version || "")).toLowerCase().includes(q)), "eq");
 
   $("#tb-eq").innerHTML = filas.length ? filas.map(e => `<tr>
       <td class="principal">${esc(e.machine_name || "Sin nombre")}
@@ -604,7 +687,7 @@ function pintarEquipos() {
 }
 
 function pintarVersiones() {
-  $("#tb-ver").innerHTML = versiones.length ? versiones.map(v => `<tr>
+  $("#tb-ver").innerHTML = versiones.length ? ordenar(versiones, "ver").map(v => `<tr>
       <td class="principal mono">${esc(v.version)}</td>
       <td class="mono">${v.build}</td>
       <td>${v.published ? '<span class="pill ok">Publicada</span>'
@@ -626,7 +709,7 @@ function pintarVersiones() {
 
 function pintarUsuarios() {
   const yo = (sesion?.user?.email || "").toLowerCase();
-  $("#tb-usr").innerHTML = usuarios.length ? usuarios.map(u => {
+  $("#tb-usr").innerHTML = usuarios.length ? ordenar(usuarios, "usr").map(u => {
     const esYo = (u.email || "").toLowerCase() === yo;
     const admin = (u.rol ?? "admin") === "admin";
     return `<tr>

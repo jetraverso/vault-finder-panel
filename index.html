@@ -106,6 +106,7 @@
   .icono{background:none;border:none;color:var(--faint);padding:4px 6px;border-radius:6px;font-size:14px}
   .icono:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 9%,transparent)}
   .icono.peligro:hover{color:var(--danger)}
+  .icono.grande{font-size:17px;padding:3px 7px}
 
   /* ── panel lateral ── */
   .fondo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
@@ -211,7 +212,7 @@
       <div class="tabla-caja"><table>
         <thead><tr>
           <th>Versión</th><th>Build</th><th>Estado</th><th>macOS mínimo</th>
-          <th>Subida</th><th>Notas</th><th></th>
+          <th>Subida</th><th>Notas</th><th></th><th></th>
         </tr></thead>
         <tbody id="tb-ver"></tbody>
       </table></div>
@@ -506,8 +507,12 @@ function pintarVersiones() {
       <td style="text-align:right">
         <button class="btn" data-publicar="${esc(v.version)}" style="padding:5px 11px;font-size:12px">
           ${v.published ? "Retirar" : "Publicar"}</button>
+      </td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="icono grande" data-bajar="${esc(v.file_path)}" title="Descargar esta versión">⤓</button>
+        <button class="icono grande" data-enlace="${esc(v.file_path)}" title="Copiar un enlace para mandarle a alguien (vale 7 días)">🔗</button>
       </td></tr>`).join("")
-    : `<tr><td colspan="7" class="vacio">Todavía no publicaste ninguna versión.</td></tr>`;
+    : `<tr><td colspan="8" class="vacio">Todavía no publicaste ninguna versión.</td></tr>`;
 }
 
 // ───────────────────────── interacción
@@ -543,6 +548,39 @@ document.body.addEventListener("click", async ev => {
       await api(`/rest/v1/activations?license_key=eq.${encodeURIComponent(k)}&machine_id=eq.${encodeURIComponent(m)}`,
                 { method: "DELETE" });
       avisar("Equipo liberado"); cargar();
+    } catch (e) { avisar(e.message, true); }
+  }
+
+  // Los archivos viven en un bucket privado: hay que pedir un enlace firmado.
+  // Se firma con la clave pública, que es la única con permiso de lectura ahí —
+  // la misma que usa la app para actualizarse.
+  async function firmar(archivo, segundos) {
+    const r = await fetch(`${URL_BASE}/storage/v1/object/sign/updates/${encodeURIComponent(archivo)}`, {
+      method: "POST",
+      headers: { apikey: ANON, Authorization: "Bearer " + ANON, "content-type": "application/json" },
+      body: JSON.stringify({ expiresIn: segundos })
+    });
+    const d = await r.json();
+    const u = d.signedURL || d.signedUrl;
+    if (!u) throw new Error(d.message || "No pude generar el enlace.");
+    return u.startsWith("/") ? URL_BASE + "/storage/v1" + u : u;
+  }
+
+  if (b.dataset.bajar) {
+    try {
+      const u = await firmar(b.dataset.bajar, 3600);
+      const a = document.createElement("a");
+      a.href = u; a.download = b.dataset.bajar;
+      document.body.appendChild(a); a.click(); a.remove();
+      avisar("Descargando " + b.dataset.bajar);
+    } catch (e) { avisar(e.message, true); }
+  }
+
+  if (b.dataset.enlace) {
+    try {
+      const u = await firmar(b.dataset.enlace, 604800);   // una semana
+      await navigator.clipboard.writeText(u);
+      avisar("Enlace copiado · vale 7 días");
     } catch (e) { avisar(e.message, true); }
   }
 

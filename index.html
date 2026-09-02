@@ -107,6 +107,7 @@
   .icono:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 9%,transparent)}
   .icono.peligro:hover{color:var(--danger)}
   .icono.grande{font-size:17px;padding:3px 7px}
+  body.viewer .solo-admin{display:none !important}
 
   /* ── panel lateral ── */
   .fondo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20}
@@ -147,6 +148,8 @@
     <input class="campo" type="email" id="email" placeholder="tu correo" autocomplete="username" required>
     <input class="campo" type="password" id="pass" placeholder="contraseña" autocomplete="current-password" required>
     <button class="primario" id="btn-entrar" type="submit">Entrar</button>
+    <button type="button" class="link" id="btn-registro"
+            style="margin-top:14px">¿Primera vez? Crear cuenta</button>
     <div class="error" id="login-error"></div>
   </form>
 </div>
@@ -171,6 +174,7 @@
     <button data-vista="licencias" class="on">Licencias <span class="n" id="n-lic"></span></button>
     <button data-vista="equipos">Equipos <span class="n" id="n-eq"></span></button>
     <button data-vista="versiones">Versiones <span class="n" id="n-ver"></span></button>
+    <button data-vista="usuarios">Usuarios <span class="n" id="n-usr"></span></button>
   </nav>
 
   <main>
@@ -179,7 +183,7 @@
       <div class="resumen" id="kpis"></div>
       <div class="barra">
         <input class="buscar" id="buscar-lic" placeholder="Buscar cliente o clave…">
-        <button class="btn acento" id="btn-nueva">+ Nueva licencia</button>
+        <button class="btn acento solo-admin" id="btn-nueva">+ Nueva licencia</button>
       </div>
       <div class="tabla-caja"><table>
         <thead><tr>
@@ -217,11 +221,59 @@
         <tbody id="tb-ver"></tbody>
       </table></div>
     </section>
+    <!-- usuarios del panel -->
+    <section id="v-usuarios" class="oculto">
+      <div class="barra">
+        <span style="color:var(--dim);font-size:13px">
+          Quién puede entrar a este panel. Un <strong>admin</strong> puede todo;
+          un <strong>viewer</strong> solo mira.
+        </span>
+        <button class="btn acento solo-admin" id="btn-nuevo-usr">+ Dar acceso</button>
+      </div>
+      <div class="tabla-caja"><table>
+        <thead><tr>
+          <th>Correo</th><th>Nombre</th><th>Puede</th><th>Desde</th><th></th>
+        </tr></thead>
+        <tbody id="tb-usr"></tbody>
+      </table></div>
+      <p style="color:var(--faint);font-size:12.5px;margin-top:14px;max-width:70ch">
+        Al dar acceso a alguien, pasale la dirección de este panel. La primera vez
+        tiene que tocar <em>Crear cuenta</em> en la pantalla de entrada y usar
+        <strong>exactamente ese correo</strong>; la contraseña la elige la persona y
+        vos no la ves nunca.
+      </p>
+    </section>
+
   </main>
 </div>
 
 <!-- hoja lateral -->
 <div id="fondo" class="fondo oculto"></div>
+
+<aside id="hoja-usr" class="hoja oculto">
+  <h2 id="usr-titulo">Dar acceso</h2>
+  <p class="ayuda">La persona se crea la cuenta con este correo; vos solo decidís
+     qué puede hacer.</p>
+  <form id="form-usr">
+    <label>Correo</label>
+    <input class="campo" id="u-email" type="email" placeholder="persona@club.com" required>
+
+    <label>Nombre</label>
+    <input class="campo" id="u-nombre" placeholder="Cómo lo vas a reconocer">
+
+    <label>Qué puede hacer</label>
+    <select class="campo" id="u-rol">
+      <option value="admin">Admin — crear licencias, liberar equipos, publicar versiones</option>
+      <option value="viewer">Viewer — solo mirar</option>
+    </select>
+
+    <div class="acciones">
+      <button type="submit" class="primario" id="u-guardar">Guardar</button>
+      <button type="button" class="btn-cancelar" id="u-cancelar">Cancelar</button>
+    </div>
+    <div class="error" id="usr-error"></div>
+  </form>
+</aside>
 <aside id="hoja" class="hoja oculto">
   <h2 id="hoja-titulo">Nueva licencia</h2>
   <p class="ayuda" id="hoja-ayuda">La clave se genera sola. Pasásela al cliente para que active la app.</p>
@@ -273,7 +325,11 @@ const URL_BASE = "https://qreukyolinfdcdfnpgbp.supabase.co";
 const ANON     = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyZXVreW9saW5mZGNkZm5wZ2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczODk2MzgsImV4cCI6MjEwMjk2NTYzOH0.C1Pqp0TY1dnUmhL4gW4FYOqqH76w9BMW05cSglDG65E";
 
 let sesion = JSON.parse(localStorage.getItem("vf_sesion") || "null");
-let licencias = [], equipos = [], versiones = [], editando = null;
+let licencias = [], equipos = [], versiones = [], usuarios = [], editando = null;
+/// Qué puede hacer quien entró. Se calcula al cargar, mirando su fila en la
+/// lista de usuarios; ante la duda, lo mínimo.
+let miRol = "viewer";
+const soyAdmin = () => miRol === "admin";
 
 const $ = s => document.querySelector(s);
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -371,12 +427,17 @@ async function cargar() {
     // Se leen las tablas de frente, no una vista: las vistas de Postgres pueden
     // ejecutarse con los permisos de quien las creó y saltearse las reglas de
     // seguridad. El resumen por licencia se arma acá, que es trivial.
-    const [crudas, actos, vers] = await Promise.all([
+    const [crudas, actos, vers, usrs] = await Promise.all([
       api("/rest/v1/licenses?select=*&order=client"),
       api("/rest/v1/activations?select=*&order=last_seen.desc"),
-      api("/rest/v1/versions?select=*&order=build.desc")
+      api("/rest/v1/versions?select=*&order=build.desc"),
+      api("/rest/v1/admins?select=*&order=email")
     ]);
-    equipos = actos; versiones = vers;
+    equipos = actos; versiones = vers; usuarios = usrs;
+
+    const yo = (sesion?.user?.email || "").toLowerCase();
+    miRol = usuarios.find(u => (u.email || "").toLowerCase() === yo)?.rol || "viewer";
+    document.body.classList.toggle("viewer", !soyAdmin());
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     licencias = crudas.map(l => {
       const suyos = actos.filter(a => a.license_key === l.key);
@@ -396,7 +457,8 @@ async function cargar() {
   $("#n-lic").textContent = licencias.length;
   $("#n-eq").textContent  = equipos.length;
   $("#n-ver").textContent = versiones.length;
-  pintarKPIs(); pintarLicencias(); pintarEquipos(); pintarVersiones();
+  $("#n-usr").textContent = usuarios.length;
+  pintarKPIs(); pintarLicencias(); pintarEquipos(); pintarVersiones(); pintarUsuarios();
 }
 
 const fecha = t => t ? new Date(t).toLocaleDateString("es-AR",
@@ -455,7 +517,7 @@ function pintarLicencias() {
       <td>${l.expires_at ? fecha(l.expires_at) : "sin vencimiento"}</td>
       <td>${estadoLic(l)}</td>
       <td style="color:var(--dim)">${hace(l.ultima_actividad)}</td>
-      <td style="text-align:right">
+      <td style="text-align:right" class="solo-admin">
         <button class="icono" data-editar="${esc(l.key)}" title="Editar">✎</button>
         <button class="icono peligro" data-borrar="${esc(l.key)}" title="Eliminar">✕</button>
       </td></tr>`;
@@ -487,7 +549,7 @@ function pintarEquipos() {
       <td class="mono" style="color:var(--dim)">${esc(e.os_version || "—")}</td>
       <td style="color:var(--dim)">${hace(e.last_seen)}</td>
       <td style="color:var(--faint)">${fecha(e.first_seen)}</td>
-      <td style="text-align:right">
+      <td style="text-align:right" class="solo-admin">
         <button class="icono peligro" data-liberar="${esc(e.license_key)}|${esc(e.machine_id)}"
                 title="Liberar este equipo">✕</button>
       </td></tr>`).join("")
@@ -504,7 +566,7 @@ function pintarVersiones() {
       <td style="color:var(--dim)">${fecha(v.created_at)}</td>
       <td style="white-space:normal;max-width:420px;color:var(--dim);font-size:12.5px">
         ${esc((v.notes || "").split("\n")[0])}</td>
-      <td style="text-align:right">
+      <td style="text-align:right" class="solo-admin">
         <button class="btn" data-publicar="${esc(v.version)}" style="padding:5px 11px;font-size:12px">
           ${v.published ? "Retirar" : "Publicar"}</button>
       </td>
@@ -515,12 +577,32 @@ function pintarVersiones() {
     : `<tr><td colspan="8" class="vacio">Todavía no publicaste ninguna versión.</td></tr>`;
 }
 
+function pintarUsuarios() {
+  const yo = (sesion?.user?.email || "").toLowerCase();
+  $("#tb-usr").innerHTML = usuarios.length ? usuarios.map(u => {
+    const esYo = (u.email || "").toLowerCase() === yo;
+    const admin = u.rol === "admin";
+    return `<tr>
+      <td class="principal mono" style="font-size:12.5px">${esc(u.email)}
+        ${esYo ? '<span class="pill" style="margin-left:6px">vos</span>' : ""}</td>
+      <td>${esc(u.nombre || "—")}</td>
+      <td>${admin ? '<span class="pill ok">Todo</span>'
+                  : '<span class="pill">Solo mirar</span>'}</td>
+      <td style="color:var(--faint)">${fecha(u.created_at)}</td>
+      <td style="text-align:right" class="solo-admin">
+        <button class="icono" data-editar-usr="${esc(u.email)}" title="Cambiar qué puede hacer">✎</button>
+        ${esYo ? "" : `<button class="icono peligro" data-borrar-usr="${esc(u.email)}"
+                        title="Sacarle el acceso">✕</button>`}
+      </td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="vacio">Nadie más tiene acceso todavía.</td></tr>`;
+}
+
 // ───────────────────────── interacción
 
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
   b.classList.add("on");
-  ["licencias", "equipos", "versiones"].forEach(v =>
+  ["licencias", "equipos", "versiones", "usuarios"].forEach(v =>
     $("#v-" + v).classList.toggle("oculto", v !== b.dataset.vista));
 }));
 
@@ -581,6 +663,19 @@ document.body.addEventListener("click", async ev => {
       const u = await firmar(b.dataset.enlace, 604800);   // una semana
       await navigator.clipboard.writeText(u);
       avisar("Enlace copiado · vale 7 días");
+    } catch (e) { avisar(e.message, true); }
+  }
+
+  if (b.dataset.editarUsr) {
+    abrirUsuario(usuarios.find(u => u.email === b.dataset.editarUsr));
+  }
+
+  if (b.dataset.borrarUsr) {
+    if (!confirm(`¿Sacarle el acceso a ${b.dataset.borrarUsr}?\n\nSu cuenta sigue existiendo, pero deja de ver nada.`)) return;
+    try {
+      await api("/rest/v1/admins?email=eq." + encodeURIComponent(b.dataset.borrarUsr),
+                { method: "DELETE" });
+      avisar("Acceso retirado"); cargar();
     } catch (e) { avisar(e.message, true); }
   }
 
@@ -666,6 +761,87 @@ $("#form-lic").addEventListener("submit", async e => {
     $("#hoja-error").textContent = /duplicate|unique/i.test(err.message)
       ? "Ya existe una licencia con esa clave." : err.message;
   } finally { btn.disabled = false; btn.textContent = "Guardar"; }
+});
+
+// ───────────────────────── dar acceso
+
+let editandoUsr = null;
+
+function abrirUsuario(u) {
+  editandoUsr = u || null;
+  $("#usr-titulo").textContent = u ? "Cambiar acceso" : "Dar acceso";
+  $("#u-email").value  = u?.email  || "";
+  $("#u-nombre").value = u?.nombre || "";
+  $("#u-rol").value    = u?.rol    || "admin";
+  $("#u-email").readOnly = !!u;      // el correo identifica: no se cambia
+  $("#usr-error").textContent = "";
+  $("#hoja-usr").classList.remove("oculto"); $("#fondo").classList.remove("oculto");
+  setTimeout(() => (u ? $("#u-rol") : $("#u-email")).focus(), 60);
+}
+function cerrarUsuario() {
+  $("#hoja-usr").classList.add("oculto"); $("#fondo").classList.add("oculto");
+  editandoUsr = null;
+}
+$("#btn-nuevo-usr").addEventListener("click", () => abrirUsuario(null));
+$("#u-cancelar").addEventListener("click", cerrarUsuario);
+
+$("#form-usr").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#u-guardar");
+  btn.disabled = true; btn.textContent = "Guardando…"; $("#usr-error").textContent = "";
+  const datos = {
+    email: $("#u-email").value.trim().toLowerCase(),
+    nombre: $("#u-nombre").value.trim() || null,
+    rol: $("#u-rol").value
+  };
+  try {
+    if (editandoUsr) {
+      await api("/rest/v1/admins?email=eq." + encodeURIComponent(editandoUsr.email),
+                { method: "PATCH", body: JSON.stringify({ nombre: datos.nombre, rol: datos.rol }) });
+      avisar("Acceso actualizado");
+    } else {
+      await api("/rest/v1/admins", {
+        method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(datos)
+      });
+      avisar("Acceso dado · " + datos.email);
+    }
+    cerrarUsuario(); cargar();
+  } catch (err) {
+    $("#usr-error").textContent = /duplicate|unique/i.test(err.message)
+      ? "Esa persona ya tiene acceso." : err.message;
+  } finally { btn.disabled = false; btn.textContent = "Guardar"; }
+});
+
+// ───────────────────────── crear cuenta
+
+$("#btn-registro").addEventListener("click", async () => {
+  const email = $("#email").value.trim(), pass = $("#pass").value;
+  if (!email || pass.length < 6) {
+    $("#login-error").textContent =
+      "Escribí tu correo y una contraseña de al menos 6 caracteres, y tocá de nuevo.";
+    return;
+  }
+  $("#login-error").textContent = "";
+  try {
+    const r = await fetch(URL_BASE + "/auth/v1/signup", {
+      method: "POST", headers: { apikey: ANON, "content-type": "application/json" },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.msg || d.error_description || "No pude crear la cuenta.");
+    // según cómo esté configurado Supabase, puede pedir confirmar por mail
+    if (d.access_token) {
+      sesion = d;
+      localStorage.setItem("vf_sesion", JSON.stringify(d));
+      await entrar();
+    } else {
+      $("#login-error").textContent =
+        "Cuenta creada. Si te llega un mail de confirmación, abrilo y después entrá acá.";
+    }
+  } catch (e) {
+    $("#login-error").textContent = /registered|already/i.test(e.message)
+      ? "Ese correo ya tiene cuenta. Entrá con tu contraseña." : e.message;
+  }
 });
 
 // ───────────────────────── arranque

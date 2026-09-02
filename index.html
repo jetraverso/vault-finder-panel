@@ -224,6 +224,16 @@
     </section>
     <!-- usuarios del panel -->
     <section id="v-usuarios" class="oculto">
+      <div id="aviso-roles" class="oculto"
+           style="background:color-mix(in srgb,var(--warn) 11%,transparent);
+                  border:1px solid color-mix(in srgb,var(--warn) 40%,var(--line));
+                  border-radius:11px;padding:13px 16px;margin-bottom:16px;font-size:13px">
+        <strong style="color:var(--warn)">Los roles todavía no están activos.</strong>
+        Podés dar y quitar accesos, pero por ahora <strong>todos pueden todo</strong>.
+        Para que la diferencia entre admin y viewer sea real hay que correr una vez
+        <code style="font-family:'IBM Plex Mono',monospace">server/roles.sql</code>
+        en Supabase → SQL Editor.
+      </div>
       <div class="barra">
         <span style="color:var(--dim);font-size:13px">
           Quién puede entrar a este panel. Un <strong>admin</strong> puede todo;
@@ -330,6 +340,9 @@ let licencias = [], equipos = [], versiones = [], usuarios = [], editando = null
 /// Qué puede hacer quien entró. Se calcula al cargar, mirando su fila en la
 /// lista de usuarios; ante la duda, lo mínimo.
 let miRol = "viewer";
+/// La base todavía no tiene la columna `rol` (el SQL de roles sin correr). El
+/// panel sigue funcionando: todos los de la lista pueden todo, como antes.
+let sinRoles = false;
 const soyAdmin = () => miRol === "admin";
 
 const $ = s => document.querySelector(s);
@@ -443,6 +456,8 @@ async function cargar() {
     // sin un solo botón.
     const yo = (sesion?.user?.email || "").toLowerCase();
     const miFila = usuarios.find(u => (u.email || "").toLowerCase() === yo);
+    sinRoles = usuarios.length > 0 && usuarios.every(u => u.rol === undefined);
+    $("#aviso-roles").classList.toggle("oculto", !sinRoles);
     miRol = miFila ? (miFila.rol ?? "admin") : "viewer";
     document.body.classList.toggle("viewer", !soyAdmin());
     $("#mi-rol").textContent = miFila ? (soyAdmin() ? "admin" : "viewer") : "sin acceso";
@@ -803,17 +818,34 @@ $("#form-usr").addEventListener("submit", async e => {
     nombre: $("#u-nombre").value.trim() || null,
     rol: $("#u-rol").value
   };
-  try {
+  // Si la base todavía no tiene la columna `rol`, se guarda sin ella en vez de
+  // fallar: el acceso queda dado igual y el rol se aplica cuando se corra el SQL.
+  const esFaltaDeColumna = e => /'rol' column|column .*rol|PGRST204/i.test(e.message || "");
+  const guardar = async (conRol) => {
+    const cuerpo = conRol ? datos : { email: datos.email, nombre: datos.nombre };
     if (editandoUsr) {
+      const parche = conRol ? { nombre: datos.nombre, rol: datos.rol } : { nombre: datos.nombre };
       await api("/rest/v1/admins?email=eq." + encodeURIComponent(editandoUsr.email),
-                { method: "PATCH", body: JSON.stringify({ nombre: datos.nombre, rol: datos.rol }) });
-      avisar("Acceso actualizado");
+                { method: "PATCH", body: JSON.stringify(parche) });
     } else {
       await api("/rest/v1/admins", {
-        method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(datos)
+        method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(cuerpo)
       });
-      avisar("Acceso dado · " + datos.email);
     }
+  };
+
+  try {
+    try {
+      await guardar(true);
+    } catch (e) {
+      if (!esFaltaDeColumna(e)) throw e;
+      await guardar(false);
+      avisar("Guardado, pero el rol no se aplica hasta correr roles.sql", true);
+      cerrarUsuario(); cargar();
+      btn.disabled = false; btn.textContent = "Guardar";
+      return;
+    }
+    avisar(editandoUsr ? "Acceso actualizado" : "Acceso dado · " + datos.email);
     cerrarUsuario(); cargar();
   } catch (err) {
     $("#usr-error").textContent = /duplicate|unique/i.test(err.message)

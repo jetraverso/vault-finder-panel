@@ -166,6 +166,7 @@
     <span class="titulo">Vault Finder</span>
     <span class="crecer"></span>
     <span class="quien" id="quien"></span>
+    <span class="pill" id="mi-rol" style="font-size:10px"></span>
     <button class="link" id="btn-recargar">Actualizar</button>
     <button class="link" id="btn-salir">Salir</button>
   </header>
@@ -435,9 +436,17 @@ async function cargar() {
     ]);
     equipos = actos; versiones = vers; usuarios = usrs;
 
+    // Ojo con el orden de los casos: si la columna `rol` todavía no existe en la
+    // base (el SQL de roles sin correr), la fila viene SIN ese campo y hay que
+    // tratarla como admin, que es lo que significaba estar en la lista antes de
+    // que hubiera roles. Interpretarlo como «viewer» dejaba al dueño del panel
+    // sin un solo botón.
     const yo = (sesion?.user?.email || "").toLowerCase();
-    miRol = usuarios.find(u => (u.email || "").toLowerCase() === yo)?.rol || "viewer";
+    const miFila = usuarios.find(u => (u.email || "").toLowerCase() === yo);
+    miRol = miFila ? (miFila.rol ?? "admin") : "viewer";
     document.body.classList.toggle("viewer", !soyAdmin());
+    $("#mi-rol").textContent = miFila ? (soyAdmin() ? "admin" : "viewer") : "sin acceso";
+    $("#mi-rol").className = "pill " + (soyAdmin() ? "ok" : (miFila ? "" : "no"));
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     licencias = crudas.map(l => {
       const suyos = actos.filter(a => a.license_key === l.key);
@@ -581,7 +590,7 @@ function pintarUsuarios() {
   const yo = (sesion?.user?.email || "").toLowerCase();
   $("#tb-usr").innerHTML = usuarios.length ? usuarios.map(u => {
     const esYo = (u.email || "").toLowerCase() === yo;
-    const admin = u.rol === "admin";
+    const admin = (u.rol ?? "admin") === "admin";
     return `<tr>
       <td class="principal mono" style="font-size:12.5px">${esc(u.email)}
         ${esYo ? '<span class="pill" style="margin-left:6px">vos</span>' : ""}</td>

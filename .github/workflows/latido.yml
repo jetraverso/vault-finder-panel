@@ -1,0 +1,55 @@
+# Latido para Supabase.
+#
+# El plan gratuito pausa el proyecto tras 7 días sin actividad; pasó dos veces
+# (20/10 y 6/11 de 2026) y los clientes se quedaron sin validar licencias ni
+# recibir actualizaciones. Cada 3 días se hace una consulta real a la base
+# (check_app con una licencia que no existe: responde «no_existe» sin escribir
+# nada) y eso cuenta como actividad.
+#
+# Usa solo la clave pública (anon), la misma que viaja dentro de la app.
+#
+# Además anota la fecha en latido.txt y la commitea: GitHub desactiva los
+# crons de un repositorio que lleva 60 días sin commits, y entre release y
+# release puede pasar más que eso.
+#
+# Fuente: vault-finder/web/latido.yml. Se publica en
+# jetraverso/vault-finder-panel/.github/workflows/latido.yml.
+name: Latido para Supabase
+
+on:
+  schedule:
+    - cron: "17 9 */3 * *"     # cada 3 días a las 09:17 UTC (margen sobre los 7 días)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  latido:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Consultar el servidor de Vault Finder
+        env:
+          URL: https://qreukyolinfdcdfnpgbp.supabase.co
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyZXVreW9saW5mZGNkZm5wZ2JwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczODk2MzgsImV4cCI6MjEwMjk2NTYzOH0.C1Pqp0TY1dnUmhL4gW4FYOqqH76w9BMW05cSglDG65E
+        run: |
+          R=$(curl -sS --max-time 40 -X POST "$URL/rest/v1/rpc/check_app" \
+                -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+                -H "content-type: application/json" \
+                -d '{"p_license":"LATIDO","p_machine_id":"latido-github"}' || true)
+          echo "respuesta: $R"
+          if ! echo "$R" | grep -q '"valid"'; then
+            echo "::error::El servidor de Vault Finder no respondió. ¿Está pausado en Supabase?"
+            exit 1
+          fi
+
+      - name: Anotar el latido en el repositorio
+        run: |
+          date -u +"%Y-%m-%d %H:%M UTC" > latido.txt
+          git config user.name "latido"
+          git config user.email "latido@users.noreply.github.com"
+          git add latido.txt
+          git commit -m "latido $(date -u +%F)" || exit 0
+          git push
